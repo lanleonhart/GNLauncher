@@ -5,8 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GNLauncher"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="GN Launcher" Height="450" Width="800">
 
-    </Grid>
+    <Page x:Name="step_select_exe">
+        <Grid>
+            <Label x:Name="label" Content="BattleTech.exe Location" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0"/>
+            <TextBox x:Name="textBox_exe_loc" TextWrapping="Wrap" VerticalAlignment="Top" Margin="143,14,64,0"/>
+            <Button x:Name="button_browse" Content=" Browse " VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,13,10,0" Click="button_browse_Click"/>
+            <Button x:Name="button_start_install" Content="Install GN Wars" Margin="10,36,10,0" VerticalAlignment="Top" Click="button_start_install_Click" IsEnabled="false"/>
+
+        </Grid>
+    </Page>
+
+
 </Window>
