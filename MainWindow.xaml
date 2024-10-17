@@ -6,16 +6,24 @@
         xmlns:local="clr-namespace:GNLauncher"
         mc:Ignorable="d"
         Title="GN Launcher" Height="450" Width="800">
-
-    <Page x:Name="step_select_exe">
-        <Grid>
+    <Grid>
+        <Grid x:Name="step_select_exe" Visibility="Visible">            
             <Label x:Name="label" Content="BattleTech.exe Location" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0"/>
             <TextBox x:Name="textBox_exe_loc" TextWrapping="Wrap" VerticalAlignment="Top" Margin="143,14,64,0"/>
             <Button x:Name="button_browse" Content=" Browse " VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,13,10,0" Click="button_browse_Click"/>
             <Button x:Name="button_start_install" Content="Install GN Wars" Margin="10,36,10,0" VerticalAlignment="Top" Click="button_start_install_Click" IsEnabled="false"/>
-
+            <Button x:Name="button_open_log" Content="Open Log" HorizontalAlignment="Left" Margin="10,0,0,10" Click="button_open_log_Click" Height="20" VerticalAlignment="Bottom"/>            
         </Grid>
-    </Page>
-
+        <Grid x:Name="step_downloading" Visibility="Hidden">            
+            <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
+                <Label x:Name="label1" Content="Downloading Files" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                <Label Content="Total Progress" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
+                <ProgressBar x:Name="progressTotal" Height="30"/>
+                <Label x:Name="label_current_file" Content="Downloading..." HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
+                <ProgressBar x:Name="progressCurrent" Height="30"/>
+                <Button x:Name="btn_download_cancel" Content="Cancel" Margin="0,10,0,0" HorizontalAlignment="Center" Width="50"/>
+            </StackPanel>            
+        </Grid>
+    </Grid>
 
 </Window>
