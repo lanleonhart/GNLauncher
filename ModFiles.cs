@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net.Http.Handlers;
 using System.Windows;
-using static System.Net.WebRequestMethods;
 
 namespace GNLauncher
 {
@@ -36,40 +30,74 @@ namespace GNLauncher
             "https://github.com/lanleonhart/Battletech-GN-Wars/archive/refs/heads/development.zip"
         };
 
+        List<string> _downloadedFiles = new List<string>();
+        System.Action<int, int, string, HttpProgressEventArgs> _progressCallback = null;
+        string _currentURL;
 
-        public async Task Download()
-        {
-            var tempPath = Path.Join(Path.GetTempPath(), "gnwars");
+        public async Task Download(System.Action<int, int, string, HttpProgressEventArgs> progressCallback)
+        {            
+            App.Log.Information("Starting file download");
+            _downloadedFiles.Clear();
+            _progressCallback = progressCallback;
 
+            var tempPath = Path.Join(App.TempPath, "files");
             try
             {
-                Directory.Delete(tempPath, true);
+                if(Directory.Exists(tempPath))
+                    Directory.Delete(tempPath, true);
+                
                 Directory.CreateDirectory(tempPath);
             }
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
-
-            
-            foreach (string url in URLS)
+            catch (Exception ex) 
             {
-                using (var client = new HttpClient())
+                App.Log.Error(ex.ToString());
+                MessageBox.Show($"Error occured. See log at {App.TempPath}");
+            }
+
+            var handler = new HttpClientHandler() { AllowAutoRedirect = true };
+            var progresshandler = new ProgressMessageHandler(handler);
+            progresshandler.HttpReceiveProgress += Progresshandlder_HttpReceiveProgress;            
+            using (var client = new HttpClient(progresshandler))
+            {                
+                foreach (string url in URLS)
                 {
                     try
                     {
-                        var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-                        var response = await client.SendAsync(request);
-                        response.EnsureSuccessStatusCode();
-
-                        var stream = await response.Content.ReadAsStreamAsync();
-                        var zipPath = Path.Join(tempPath, Path.GetRandomFileName() + ".zip");
-                        using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        App.Log.Information($"Downloading {url}");
+                        _currentURL = url;
+                        var stream = await client.GetStreamAsync(url);
+                        var zipPath = Path.Join(tempPath, MakeFilenameFromGithubURL(url) + ".zip");
+                        try
                         {
-                            await stream.CopyToAsync(fileStream);
+                            using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                            {
+                                await stream.CopyToAsync(fileStream);
+                                _downloadedFiles.Add(zipPath);                                
+                                App.Log.Information($"Downloaded {zipPath}");
+                            }
                         }
+                        catch (Exception ex) { App.Log.Error(ex.ToString()); }
                     }
-                    catch(Exception ex) { MessageBox.Show(ex.ToString());  }
+                    catch (Exception ex)
+                    {
+                        App.Log.Error(ex.ToString());
+                        MessageBox.Show($"Error occured. See log at {App.TempPath}");
+                    }
                 }
             }
+            App.Log.Information("Finished file download");
+        }
+
+        private void Progresshandlder_HttpReceiveProgress(object? sender, HttpProgressEventArgs e)
+        {
+            _progressCallback?.Invoke(URLS.Length, _downloadedFiles.Count, _currentURL, e);
+        }
+
+        string MakeFilenameFromGithubURL(string url)
+        {
+            var split = url.Split('/');
+            return split[4];
         }
     }
+
 }
