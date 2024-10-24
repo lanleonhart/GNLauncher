@@ -40,16 +40,49 @@ namespace GNLauncher
             step_downloading.Visibility = Visibility.Visible;
 
             var files = new ModFiles();
+            files.OnErrorOccured += Files_OnErrorOccured;
+
+            //download files
             await files.Download(UpdateDownloadProgress);
 
             step_downloading.Visibility = Visibility.Hidden;
-            step_select_exe.Visibility = Visibility.Visible;
+            step_installing.Visibility = Visibility.Visible;
+
+            //extract files
+            await files.ExtractFiles(textBox_exe_loc.Text, (msg, total, count) => 
+            {
+                step_installing.Dispatcher.Invoke(() =>
+                {
+                    lblInstall.Content = msg;
+                    installProgressTotal.Maximum = total;
+                    installProgressTotal.Value = count;
+                });
+            });
+
+            //copy files
+            await files.CopyFiles(textBox_exe_loc.Text, (msg, total, count) =>
+            {
+                step_installing.Dispatcher.Invoke(() =>
+                {
+                    lblInstall.Content = msg;
+                    installProgressTotal.Maximum = total;
+                    installProgressTotal.Value = count;
+                });
+            });
+
             App.Log.Information("Finished mod installation");
+        }
+
+        private void Files_OnErrorOccured()
+        {
+            MessageBox.Show("An error occured during install. Contact Support with log files");
+            System.Diagnostics.Process.Start("explorer", App.TempPath);
+            Application.Current.Shutdown();
         }
 
         private void button_open_log_Click(object sender, RoutedEventArgs e)
         {            
-            System.Diagnostics.Process.Start(App.TempPath);
+            System.Diagnostics.Process.Start("explorer", App.TempPath);
         }
 
         void UpdateDownloadProgress(int totalFiles, int filesDownloaded, string currentFile, HttpProgressEventArgs args)
@@ -61,15 +94,20 @@ namespace GNLauncher
 
                 label_current_file.Content = $"Downloading {currentFile}";
 
-                if (args.TotalBytes.HasValue)
+                if (args != null)
                 {
-                    progressCurrent.Maximum = args.TotalBytes.Value;
-                    progressCurrent.Value = args.BytesTransferred;
-                }
-                else
-                {
-                    progressCurrent.Maximum = 100;
-                    progressCurrent.Value = args.ProgressPercentage;
+                    if (args.TotalBytes.HasValue)
+                    {
+                        progressCurrent.IsIndeterminate = false;
+                        progressCurrent.Maximum = args.TotalBytes.Value;
+                        progressCurrent.Value = args.BytesTransferred;
+                        tb_progress.Text = $"{args.ProgressPercentage}%";
+                    }
+                    else
+                    {
+                        progressCurrent.IsIndeterminate = true;
+                        tb_progress.Text = $"{args.BytesTransferred}";
+                    }
                 }
             });
         }
