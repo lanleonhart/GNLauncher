@@ -1,12 +1,17 @@
 ﻿using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Handlers;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace GNLauncher
 {
     internal class ModFiles
-    {   
+    {
+        public delegate void ErrorOccured();
+        public event ErrorOccured? OnErrorOccured;
+
         string[] URLS = new string[]
         {
             "https://github.com/wmtorode/mechaffinity/releases/download/v1.4.1/MechAffinity.zip",
@@ -31,6 +36,7 @@ namespace GNLauncher
         };
 
         List<string> _downloadedFiles = new List<string>();
+        List<string> _extractedFiles = new List<string>();
         System.Action<int, int, string, HttpProgressEventArgs> _progressCallback = null;
         string _currentURL;
 
@@ -41,18 +47,18 @@ namespace GNLauncher
             _progressCallback = progressCallback;
 
             var tempPath = Path.Join(App.TempPath, "files");
-            try
-            {
-                if(Directory.Exists(tempPath))
-                    Directory.Delete(tempPath, true);
+            //try
+            //{
+            //    if(Directory.Exists(tempPath))
+            //        Directory.Delete(tempPath, true);
                 
-                Directory.CreateDirectory(tempPath);
-            }
-            catch (Exception ex) 
-            {
-                App.Log.Error(ex.ToString());
-                MessageBox.Show($"Error occured. See log at {App.TempPath}");
-            }
+            //    Directory.CreateDirectory(tempPath);
+            //}
+            //catch (Exception ex) 
+            //{
+            //    App.Log.Error(ex.ToString());
+            //    MessageBox.Show($"Error occured. See log at {App.TempPath}");
+            //}
 
             var handler = new HttpClientHandler() { AllowAutoRedirect = true };
             var progresshandler = new ProgressMessageHandler(handler);
@@ -65,27 +71,122 @@ namespace GNLauncher
                     {
                         App.Log.Information($"Downloading {url}");
                         _currentURL = url;
-                        var stream = await client.GetStreamAsync(url);
                         var zipPath = Path.Join(tempPath, MakeFilenameFromGithubURL(url) + ".zip");
-                        try
+                        if (File.Exists(zipPath))
                         {
-                            using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                            _downloadedFiles.Add(zipPath);
+                            App.Log.Information($"Existing file {zipPath}");
+                            _progressCallback?.Invoke(URLS.Length, _downloadedFiles.Count, _currentURL, null);
+                            continue;
+                        }
+                        else
+                        {
+                            var stream = await client.GetStreamAsync(url);
+                            try
                             {
-                                await stream.CopyToAsync(fileStream);
-                                _downloadedFiles.Add(zipPath);                                
-                                App.Log.Information($"Downloaded {zipPath}");
+                                using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                                {
+                                    await stream.CopyToAsync(fileStream);
+                                    _downloadedFiles.Add(zipPath);
+                                    App.Log.Information($"Downloaded {zipPath}");
+                                }
+                            }
+                            catch (Exception ex) 
+                            { 
+                                App.Log.Error(ex.ToString());
+                                OnErrorOccured?.Invoke();
+                                return;
                             }
                         }
-                        catch (Exception ex) { App.Log.Error(ex.ToString()); }
                     }
                     catch (Exception ex)
                     {
                         App.Log.Error(ex.ToString());
-                        MessageBox.Show($"Error occured. See log at {App.TempPath}");
+                        OnErrorOccured?.Invoke();
+                        return;                        
                     }
                 }
             }
             App.Log.Information("Finished file download");
+        }
+
+        public async Task ExtractFiles(string exeFolder, Action<string, int, int> progressCallback)
+        {
+            var tempPath = Path.Join(App.TempPath, "extracted");
+            int count = 0;
+            foreach (var file in _downloadedFiles)
+            {
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        using (var zip = ZipFile.OpenRead(file))
+                        {
+                            var extractedPath = Path.Join(tempPath, zip.Entries[0].FullName);
+                            if(!Directory.Exists(extractedPath))
+                                zip.ExtractToDirectory(tempPath, true);
+                                                       
+                            _extractedFiles.Add(extractedPath);
+                            progressCallback.Invoke("Extracting Files", _extractedFiles.Count, ++count);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        App.Log.Error(ex.ToString());
+                        OnErrorOccured?.Invoke();
+                        return;
+                    }
+                });
+            }
+        }
+
+        public async Task CopyFiles(string exeFolder, Action<string, int, int> progressCallback)
+        {
+            var modFolder = Path.Join(Path.GetDirectoryName(exeFolder), "Mods");
+            int count = 0;
+            foreach (var folder in _extractedFiles)
+            {
+                string[] split = folder.Split(Path.DirectorySeparatorChar);
+                string modName = split[split.Length - 1].Replace("/", "");
+                string installFolder = Path.Combine(modFolder, modName);
+
+                if (Directory.Exists(installFolder))
+                {
+                    if (MessageBox.Show($"Mod {modName} alreadys exists. Overwrite?", $"Mod {modName} exists", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                    {
+                        progressCallback.Invoke("Copying Files", _downloadedFiles.Count, ++count);
+                        continue;
+                    }
+                    else
+                    {
+                        Directory.Delete(installFolder, true);
+                    }
+                }
+
+                await Task.Run(() =>
+                {
+                    if (folder.Contains("Community-Asset-Bundle"))
+                    {
+
+                    }
+                    else if (folder.Contains("GN-Wars"))
+                    {
+
+                    }
+                    else
+                    {
+                        try { Directory.Move(folder, installFolder); }
+                        catch (Exception ex) 
+                        {
+                            App.Log.Error(ex.ToString());
+                            OnErrorOccured?.Invoke();
+                            return;
+                        }
+                    }
+
+                    progressCallback.Invoke("Copying Files", _downloadedFiles.Count, ++count);
+                });
+            }
         }
 
         private void Progresshandlder_HttpReceiveProgress(object? sender, HttpProgressEventArgs e)
