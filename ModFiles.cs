@@ -146,9 +146,29 @@ namespace GNLauncher
             int count = 0;
             foreach (var folder in _extractedFiles)
             {
-                string[] split = folder.Split(Path.DirectorySeparatorChar);
-                string modName = split[split.Length - 1].Replace("/", "");
-                string installFolder = Path.Combine(modFolder, modName);
+                string[] split;
+                string modName = string.Empty;
+                string installFolder = string.Empty;
+
+                if (folder.Contains("Community-Asset-Bundle"))
+                {
+                    var list = Directory.GetDirectories(folder);
+                    if (list.Length > 0)
+                    {
+                        split = list[0].Split(new char[] { Path.DirectorySeparatorChar, '/' });
+                        modName = split[split.Length - 1];
+                        installFolder = Path.Combine(modFolder, modName);
+                    }
+                }
+                else if (folder.Contains("GN-Wars"))
+                {
+                }
+                else
+                {
+                    split = folder.Split(Path.DirectorySeparatorChar);
+                    modName = split[split.Length - 1].Replace("/", "");
+                    installFolder = Path.Combine(modFolder, modName);
+                }
 
                 if (Directory.Exists(installFolder))
                 {
@@ -167,7 +187,12 @@ namespace GNLauncher
                 {
                     if (folder.Contains("Community-Asset-Bundle"))
                     {
+                        var list = Directory.GetDirectories(folder);
+                        if (list.Length > 0)
+                            MoveFolder(list[0], installFolder);
 
+                        //delete parent folder when done
+                        try { Directory.Delete(folder); } catch (Exception ex) { App.Log.Error(ex.ToString()); }
                     }
                     else if (folder.Contains("GN-Wars"))
                     {
@@ -175,13 +200,7 @@ namespace GNLauncher
                     }
                     else
                     {
-                        try { Directory.Move(folder, installFolder); }
-                        catch (Exception ex) 
-                        {
-                            App.Log.Error(ex.ToString());
-                            OnErrorOccured?.Invoke();
-                            return;
-                        }
+                        MoveFolder(folder, installFolder);
                     }
 
                     progressCallback.Invoke("Copying Files", _downloadedFiles.Count, ++count);
@@ -198,6 +217,28 @@ namespace GNLauncher
         {
             var split = url.Split('/');
             return split[4];
+        }
+
+        /// <summary>
+        /// Move the extracted mod folder to the games mod folder
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        bool MoveFolder(string source, string destination)
+        {
+            try 
+            { 
+                Directory.Move(source, destination);
+                App.Log.Information($"Copied {source} to {destination}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                App.Log.Error(ex.ToString());
+                OnErrorOccured?.Invoke();
+                return false;
+            }
         }
     }
 
