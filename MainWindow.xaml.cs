@@ -11,6 +11,8 @@ namespace GNLauncher
     /// </summary>
     public partial class MainWindow : Window
     {
+        bool _errorOccured = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -71,13 +73,20 @@ namespace GNLauncher
             });
 
             App.Log.Information("Finished mod installation");
+
+            step_installing.Visibility = Visibility.Hidden;
+            step_done.Visibility = Visibility.Visible;
+
+            if (_errorOccured)
+            {
+                MessageBox.Show("An error occured during install. Contact Support with log files");
+                System.Diagnostics.Process.Start("explorer", App.TempPath);
+            }
         }
 
         private void Files_OnErrorOccured()
         {
-            MessageBox.Show("An error occured during install. Contact Support with log files");
-            System.Diagnostics.Process.Start("explorer", App.TempPath);
-            Application.Current.Shutdown();
+            _errorOccured = true;
         }
 
         private void button_open_log_Click(object sender, RoutedEventArgs e)
@@ -110,6 +119,11 @@ namespace GNLauncher
                     }
                 }
             });
+        }
+
+        private void btnExit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
         }
     }
 }

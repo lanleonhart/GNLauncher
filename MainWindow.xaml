@@ -32,6 +32,12 @@
                 <ProgressBar x:Name="installProgressTotal" Height="30"/>                
             </StackPanel>
         </Grid>
+        <Grid x:Name="step_done" Visibility="Hidden">
+            <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
+                <Label x:Name="lbdone" Content="Mod Installed" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                <Button x:Name="btnExit" Content="EXIT" Click="btnExit_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 
 </Window>
