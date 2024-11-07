@@ -3,7 +3,6 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Handlers;
 using System.Windows;
-using System.Windows.Shell;
 
 namespace GNLauncher
 {
@@ -47,18 +46,18 @@ namespace GNLauncher
             _progressCallback = progressCallback;
 
             var tempPath = Path.Join(App.TempPath, "files");
-            //try
-            //{
-            //    if(Directory.Exists(tempPath))
-            //        Directory.Delete(tempPath, true);
-                
-            //    Directory.CreateDirectory(tempPath);
-            //}
-            //catch (Exception ex) 
-            //{
-            //    App.Log.Error(ex.ToString());
-            //    MessageBox.Show($"Error occured. See log at {App.TempPath}");
-            //}
+            try
+            {
+                if (Directory.Exists(tempPath))
+                    Directory.Delete(tempPath, true);
+
+                Directory.CreateDirectory(tempPath);
+            }
+            catch (Exception ex)
+            {
+                App.Log.Error(ex.ToString());
+                MessageBox.Show($"Error occured. See log at {App.TempPath}");
+            }
 
             var handler = new HttpClientHandler() { AllowAutoRedirect = true };
             var progresshandler = new ProgressMessageHandler(handler);
@@ -143,9 +142,10 @@ namespace GNLauncher
         public async Task CopyFiles(string exeFolder, Action<string, int, int> progressCallback)
         {
             var modFolder = Path.Join(Path.GetDirectoryName(exeFolder), "Mods");
-            int count = 0;
+            int count = 0;            
             foreach (var folder in _extractedFiles)
             {
+                count++;
                 string[] split;
                 string modName = string.Empty;
                 string installFolder = string.Empty;
@@ -158,54 +158,72 @@ namespace GNLauncher
                         split = list[0].Split(new char[] { Path.DirectorySeparatorChar, '/' });
                         modName = split[split.Length - 1];
                         installFolder = Path.Combine(modFolder, modName);
+                        await InstallMod(folder, installFolder, modName, progressCallback, count);
                     }
                 }
                 else if (folder.Contains("GN-Wars"))
                 {
+                    var gnFolders = Directory.GetDirectories(folder);
+                    foreach (var f in gnFolders)
+                    {
+                        if (f.Contains("ModSaves"))
+                            continue;
+
+                        split = f.Split(new char[] { Path.DirectorySeparatorChar, '/' });
+                        modName = split[split.Length - 1];
+                        installFolder = Path.Combine(modFolder, modName);
+                        await InstallMod(f, installFolder, modName, progressCallback, count);
+                    }
                 }
                 else
                 {
                     split = folder.Split(Path.DirectorySeparatorChar);
                     modName = split[split.Length - 1].Replace("/", "");
                     installFolder = Path.Combine(modFolder, modName);
-                }
-
-                if (Directory.Exists(installFolder))
-                {
-                    if (MessageBox.Show($"Mod {modName} alreadys exists. Overwrite?", $"Mod {modName} exists", MessageBoxButton.YesNo) == MessageBoxResult.No)
-                    {
-                        progressCallback.Invoke("Copying Files", _downloadedFiles.Count, ++count);
-                        continue;
-                    }
-                    else
-                    {
-                        Directory.Delete(installFolder, true);
-                    }
-                }
-
-                await Task.Run(() =>
-                {
-                    if (folder.Contains("Community-Asset-Bundle"))
-                    {
-                        var list = Directory.GetDirectories(folder);
-                        if (list.Length > 0)
-                            MoveFolder(list[0], installFolder);
-
-                        //delete parent folder when done
-                        try { Directory.Delete(folder); } catch (Exception ex) { App.Log.Error(ex.ToString()); }
-                    }
-                    else if (folder.Contains("GN-Wars"))
-                    {
-
-                    }
-                    else
-                    {
-                        MoveFolder(folder, installFolder);
-                    }
-
-                    progressCallback.Invoke("Copying Files", _downloadedFiles.Count, ++count);
-                });
+                    await InstallMod(folder, installFolder, modName, progressCallback, count);
+                }                
             }
+        }
+
+        async Task InstallMod(string sourceFolder, string installFolder, string modName, Action<string, int, int> progressCallback, int count)
+        {
+            App.Log.Information($"Installing {modName} to {installFolder}");
+            if (Directory.Exists(installFolder))
+            {
+                //if (MessageBox.Show($"Mod {modName} alreadys exists. Overwrite?", $"Mod {modName} exists", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                //{
+                //    progressCallback.Invoke("Copying Files", _downloadedFiles.Count, count);
+                //    return;
+                //}
+                //else
+                //{
+                    try { Directory.Delete(installFolder, true); }
+                    catch (Exception ex)
+                    {
+                        App.Log.Error(ex.ToString());
+                        OnErrorOccured?.Invoke();
+                    }
+                //}
+            }
+
+            await Task.Run(() =>
+            {
+                if (sourceFolder.Contains("Community-Asset-Bundle"))
+                {
+                    var list = Directory.GetDirectories(sourceFolder);
+                    if (list.Length > 0)
+                        MoveFolder(list[0], installFolder);
+
+                    //delete parent folder when done
+                    try { Directory.Delete(sourceFolder, true); } catch (Exception ex) { App.Log.Error(ex.ToString()); }
+                }                
+                else
+                {
+                    MoveFolder(sourceFolder, installFolder);
+                }
+
+                progressCallback.Invoke("Copying Files", _downloadedFiles.Count, count);
+            });
         }
 
         private void Progresshandlder_HttpReceiveProgress(object? sender, HttpProgressEventArgs e)
@@ -223,21 +241,24 @@ namespace GNLauncher
         /// Move the extracted mod folder to the games mod folder
         /// </summary>
         /// <param name="source"></param>
-        /// <param name="destination"></param>
-        /// <returns></returns>
-        bool MoveFolder(string source, string destination)
+        /// <param name="destination"></param>      
+        void MoveFolder(string source, string destination)
         {
-            try 
-            { 
+            App.Log.Information($"Moving {source} to {destination}");
+            try
+            {
                 Directory.Move(source, destination);
                 App.Log.Information($"Copied {source} to {destination}");
-                return true;
+            }
+            catch (UnauthorizedAccessException ua)
+            {                
+                App.Log.Error($"Error moving {source} to {destination}: {ua}");
+                OnErrorOccured?.Invoke();
             }
             catch (Exception ex)
             {
                 App.Log.Error(ex.ToString());
                 OnErrorOccured?.Invoke();
-                return false;
             }
         }
     }
