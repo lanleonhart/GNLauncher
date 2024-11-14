@@ -28,8 +28,11 @@
         </Grid>
         <Grid x:Name="step_installing" Visibility="Hidden">
             <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
-                <Label x:Name="lblInstall" Content="Installing Files" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>                
-                <ProgressBar x:Name="installProgressTotal" Height="30"/>                
+                <Label x:Name="lblInstall" Content="Installing Files" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
+                <Grid>
+                    <ProgressBar x:Name="installProgressTotal" Height="30"/>
+                    <TextBlock x:Name="tb_installProgress" HorizontalAlignment="Center" VerticalAlignment="Center" Text="0%" />
+                </Grid>
             </StackPanel>
         </Grid>
         <Grid x:Name="step_done" Visibility="Hidden">

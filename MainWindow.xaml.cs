@@ -58,6 +58,7 @@ namespace GNLauncher
                     lblInstall.Content = msg;
                     installProgressTotal.Maximum = total;
                     installProgressTotal.Value = count;
+                    tb_installProgress.Text = $"{count}/{total}";
                 });
             });
 
