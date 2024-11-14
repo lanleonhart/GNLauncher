@@ -44,12 +44,16 @@ namespace GNLauncher
             App.Log.Information("Starting file download");
             _downloadedFiles.Clear();
             _progressCallback = progressCallback;
+            _progressCallback.Invoke(1, 0, "Downloading files...", null);
 
             var tempPath = Path.Join(App.TempPath, "files");
             try
             {
                 if (Directory.Exists(tempPath))
-                    Directory.Delete(tempPath, true);
+                {
+                    if(MessageBox.Show("Temp directory exists clear and re-download all mod files?", "GNWars Mod", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                        Directory.Delete(tempPath, true);
+                }
 
                 Directory.CreateDirectory(tempPath);
             }
@@ -111,12 +115,12 @@ namespace GNLauncher
 
         public async Task ExtractFiles(string exeFolder, Action<string, int, int> progressCallback)
         {
-            var tempPath = Path.Join(App.TempPath, "extracted");
-            int count = 0;
-            foreach (var file in _downloadedFiles)
+            progressCallback.Invoke("Extracting files...", 1, 0);
+            var tempPath = Path.Join(App.TempPath, "extracted");            
+            await Task.Run(() =>
             {
-                await Task.Run(() =>
-                {
+                foreach (var file in _downloadedFiles)
+                {                
                     try
                     {
                         using (var zip = ZipFile.OpenRead(file))
@@ -126,7 +130,7 @@ namespace GNLauncher
                                 zip.ExtractToDirectory(tempPath, true);
                                                        
                             _extractedFiles.Add(extractedPath);
-                            progressCallback.Invoke("Extracting Files", _extractedFiles.Count, ++count);
+                            progressCallback.Invoke("Extracting Files...", _downloadedFiles.Count, _extractedFiles.Count);
                         }
                     }
                     catch (Exception ex)
@@ -134,18 +138,19 @@ namespace GNLauncher
                         App.Log.Error(ex.ToString());
                         OnErrorOccured?.Invoke();
                         return;
-                    }
-                });
-            }
+                    }                
+                }
+            });
         }
 
         public async Task CopyFiles(string exeFolder, Action<string, int, int> progressCallback)
         {
+            progressCallback.Invoke("Copying files...", 0, 1);
             var modFolder = Path.Join(Path.GetDirectoryName(exeFolder), "Mods");
-            int count = 0;            
+            int count = 0;
+            int total = _downloadedFiles.Count;
             foreach (var folder in _extractedFiles)
-            {
-                count++;
+            {                
                 string[] split;
                 string modName = string.Empty;
                 string installFolder = string.Empty;
@@ -158,12 +163,15 @@ namespace GNLauncher
                         split = list[0].Split(new char[] { Path.DirectorySeparatorChar, '/' });
                         modName = split[split.Length - 1];
                         installFolder = Path.Combine(modFolder, modName);
-                        await InstallMod(folder, installFolder, modName, progressCallback, count);
+                        await InstallMod(folder, installFolder, modName);
+                        progressCallback.Invoke("Copying Files", total, ++count);
                     }
                 }
                 else if (folder.Contains("GN-Wars"))
-                {
+                {                    
                     var gnFolders = Directory.GetDirectories(folder);
+                    total += gnFolders.Length;
+                    progressCallback.Invoke("Copying files...", total, ++count);
                     foreach (var f in gnFolders)
                     {
                         if (f.Contains("ModSaves"))
@@ -172,7 +180,8 @@ namespace GNLauncher
                         split = f.Split(new char[] { Path.DirectorySeparatorChar, '/' });
                         modName = split[split.Length - 1];
                         installFolder = Path.Combine(modFolder, modName);
-                        await InstallMod(f, installFolder, modName, progressCallback, count);
+                        await InstallMod(f, installFolder, modName, false);
+                        progressCallback.Invoke("Copying Files", total, ++count);
                     }
                 }
                 else
@@ -180,30 +189,30 @@ namespace GNLauncher
                     split = folder.Split(Path.DirectorySeparatorChar);
                     modName = split[split.Length - 1].Replace("/", "");
                     installFolder = Path.Combine(modFolder, modName);
-                    await InstallMod(folder, installFolder, modName, progressCallback, count);
+                    await InstallMod(folder, installFolder, modName);
+                    progressCallback.Invoke("Copying Files", total, ++count);
                 }                
             }
         }
 
-        async Task InstallMod(string sourceFolder, string installFolder, string modName, Action<string, int, int> progressCallback, int count)
+        async Task InstallMod(string sourceFolder, string installFolder, string modName, bool askForOverwrite=false)
         {
             App.Log.Information($"Installing {modName} to {installFolder}");
             if (Directory.Exists(installFolder))
             {
-                //if (MessageBox.Show($"Mod {modName} alreadys exists. Overwrite?", $"Mod {modName} exists", MessageBoxButton.YesNo) == MessageBoxResult.No)
-                //{
-                //    progressCallback.Invoke("Copying Files", _downloadedFiles.Count, count);
-                //    return;
-                //}
-                //else
-                //{
+                if (askForOverwrite && MessageBox.Show($"Mod {modName} alreadys exists. Overwrite?", $"Mod {modName} exists", MessageBoxButton.YesNo) == MessageBoxResult.No)
+                {                    
+                    return;
+                }
+                else
+                {
                     try { Directory.Delete(installFolder, true); }
                     catch (Exception ex)
                     {
                         App.Log.Error(ex.ToString());
                         OnErrorOccured?.Invoke();
                     }
-                //}
+                }
             }
 
             await Task.Run(() =>
@@ -221,8 +230,6 @@ namespace GNLauncher
                 {
                     MoveFolder(sourceFolder, installFolder);
                 }
-
-                progressCallback.Invoke("Copying Files", _downloadedFiles.Count, count);
             });
         }
 
