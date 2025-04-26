@@ -8,14 +8,14 @@
         WindowStartupLocation="CenterScreen">
 
     <Grid>
-
-        <!-- Background image with zoom -->
-        <Image Source="Assets/wallpaper.jpg"
+        <!-- Background image -->
+        <Image x:Name="BackgroundImage"
+               Source="Assets/wallpaper.jpg"
                Stretch="Fill"
                RenderTransformOrigin="0.5,0.5"
                Panel.ZIndex="-1">
             <Image.LayoutTransform>
-                <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+                <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
             </Image.LayoutTransform>
         </Image>
 
@@ -28,7 +28,7 @@
                Margin="0,20,0,0"
                Panel.ZIndex="1"/>
 
-        <!-- STEP: Select EXE -->
+        <!-- Step: Select EXE -->
         <StackPanel x:Name="step_select_exe"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
@@ -46,12 +46,11 @@
             <Button x:Name="button_start_install"
                     Height="30"
                     Content="Start Install"
-                    IsEnabled="False"
                     Click="button_start_install_Click"
                     Margin="0,5"/>
         </StackPanel>
 
-        <!-- STEP: Downloading -->
+        <!-- Step: Downloading -->
         <StackPanel x:Name="step_downloading"
                     Visibility="Collapsed"
                     HorizontalAlignment="Center"
@@ -64,7 +63,7 @@
             <TextBlock x:Name="tb_progress" Text="0%" HorizontalAlignment="Center"/>
         </StackPanel>
 
-        <!-- STEP: Installing -->
+        <!-- Step: Installing -->
         <StackPanel x:Name="step_installing"
                     Visibility="Collapsed"
                     HorizontalAlignment="Center"
@@ -76,7 +75,7 @@
             <TextBlock x:Name="tb_installProgress" Text="0/0" HorizontalAlignment="Center"/>
         </StackPanel>
 
-        <!-- STEP: Done -->
+        <!-- Step: Done -->
         <StackPanel x:Name="step_done"
                     Visibility="Collapsed"
                     HorizontalAlignment="Center"
@@ -85,8 +84,6 @@
             <Button Content="Open Log Folder" Click="button_open_log_Click" Margin="0,5" Width="150"/>
             <Button Content="Exit" Click="btnExit_Click" Width="150"/>
         </StackPanel>
-
-        <!-- 🚫 Removed credit text -->
 
     </Grid>
 </Window>

@@ -51,28 +51,8 @@ namespace GNLauncher
             step_downloading.Visibility = Visibility.Hidden;
             step_installing.Visibility = Visibility.Visible;
 
-            // Extract files
-            await files.ExtractFiles(textBox_exe_loc.Text, (msg, total, count) =>
-            {
-                step_installing.Dispatcher.Invoke(() =>
-                {
-                    lblInstall.Content = msg;
-                    installProgressTotal.Maximum = total;
-                    installProgressTotal.Value = count;
-                    tb_installProgress.Text = $"{count}/{total}";
-                });
-            });
-
-            // Copy files
-            await files.CopyFiles(textBox_exe_loc.Text, (msg, total, count) =>
-            {
-                step_installing.Dispatcher.Invoke(() =>
-                {
-                    lblInstall.Content = msg;
-                    installProgressTotal.Maximum = total;
-                    installProgressTotal.Value = count;
-                });
-            });
+            // Extract and Install all mods
+            await files.ExtractAndInstall(textBox_exe_loc.Text);
 
             App.Log.Information("Finished mod installation");
 
