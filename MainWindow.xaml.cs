@@ -3,7 +3,6 @@ using System.IO;
 using System.Net.Http.Handlers;
 using System.Windows;
 
-
 namespace GNLauncher
 {
     /// <summary>
@@ -27,12 +26,14 @@ namespace GNLauncher
             openFile.ShowDialog();
             if (File.Exists(openFile.FileName))
             {
-                textBox_exe_loc.Text = openFile.FileName; 
+                textBox_exe_loc.Text = openFile.FileName;
                 App.Log.Information($"BattleTech.exe location: {openFile.FileName}");
                 button_start_install.IsEnabled = true;
             }
             else
+            {
                 button_start_install.IsEnabled = false;
+            }
         }
 
         async private void button_start_install_Click(object sender, RoutedEventArgs e)
@@ -44,14 +45,14 @@ namespace GNLauncher
             var files = new ModFiles();
             files.OnErrorOccured += Files_OnErrorOccured;
 
-            //download files
+            // Download files
             await files.Download(UpdateDownloadProgress);
 
             step_downloading.Visibility = Visibility.Hidden;
             step_installing.Visibility = Visibility.Visible;
 
-            //extract files
-            await files.ExtractFiles(textBox_exe_loc.Text, (msg, total, count) => 
+            // Extract files
+            await files.ExtractFiles(textBox_exe_loc.Text, (msg, total, count) =>
             {
                 step_installing.Dispatcher.Invoke(() =>
                 {
@@ -62,7 +63,7 @@ namespace GNLauncher
                 });
             });
 
-            //copy files
+            // Copy files
             await files.CopyFiles(textBox_exe_loc.Text, (msg, total, count) =>
             {
                 step_installing.Dispatcher.Invoke(() =>
@@ -80,7 +81,7 @@ namespace GNLauncher
 
             if (_errorOccured)
             {
-                MessageBox.Show("An error occured during install. Contact Support with log files");
+                MessageBox.Show("An error occurred during install. Contact Support with log files.");
                 System.Diagnostics.Process.Start("explorer", App.TempPath);
             }
         }
@@ -91,7 +92,7 @@ namespace GNLauncher
         }
 
         private void button_open_log_Click(object sender, RoutedEventArgs e)
-        {            
+        {
             System.Diagnostics.Process.Start("explorer", App.TempPath);
         }
 

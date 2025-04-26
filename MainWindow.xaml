@@ -1,46 +1,92 @@
 ﻿<Window x:Class="GNLauncher.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GNLauncher"
-        mc:Ignorable="d"
-        Title="GN Launcher" Height="450" Width="800">
-    <Grid>
-        <Grid x:Name="step_select_exe" Visibility="Visible">            
-            <Label x:Name="label" Content="BattleTech.exe Location" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0"/>
-            <TextBox x:Name="textBox_exe_loc" TextWrapping="Wrap" VerticalAlignment="Top" Margin="143,14,64,0"/>
-            <Button x:Name="button_browse" Content=" Browse " VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,13,10,0" Click="button_browse_Click"/>
-            <Button x:Name="button_start_install" Content="Install GN Wars" Margin="10,36,10,0" VerticalAlignment="Top" Click="button_start_install_Click" IsEnabled="false"/>
-            <Button x:Name="button_open_log" Content="Open Log" HorizontalAlignment="Left" Margin="10,0,0,10" Click="button_open_log_Click" Height="20" VerticalAlignment="Bottom"/>            
-        </Grid>
-        <Grid x:Name="step_downloading" Visibility="Hidden">            
-            <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
-                <Label x:Name="label1" Content="Downloading Files" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
-                <Label Content="Total Progress" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
-                <ProgressBar x:Name="progressTotal" Height="30"/>
-                <Label x:Name="label_current_file" Content="Downloading..." HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>                
-                <Grid>
-                    <ProgressBar x:Name="progressCurrent" Height="30"/>
-                    <TextBlock x:Name="tb_progress" HorizontalAlignment="Center" VerticalAlignment="Center" Text="0%" />
-                </Grid>                
-            </StackPanel>            
-        </Grid>
-        <Grid x:Name="step_installing" Visibility="Hidden">
-            <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
-                <Label x:Name="lblInstall" Content="Installing Files" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
-                <Grid>
-                    <ProgressBar x:Name="installProgressTotal" Height="30"/>
-                    <TextBlock x:Name="tb_installProgress" HorizontalAlignment="Center" VerticalAlignment="Center" Text="0%" />
-                </Grid>
-            </StackPanel>
-        </Grid>
-        <Grid x:Name="step_done" Visibility="Hidden">
-            <StackPanel Margin="50,50,50,50" VerticalAlignment="Center">
-                <Label x:Name="lbdone" Content="Mod Installed" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/>
-                <Button x:Name="btnExit" Content="EXIT" Click="btnExit_Click"/>
-            </StackPanel>
-        </Grid>
-    </Grid>
+        Title="GNLauncher"
+        Height="600"
+        Width="900"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
 
+    <Grid>
+
+        <!-- Background image with zoom -->
+        <Image Source="Assets/wallpaper.jpg"
+               Stretch="Fill"
+               RenderTransformOrigin="0.5,0.5"
+               Panel.ZIndex="-1">
+            <Image.LayoutTransform>
+                <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+            </Image.LayoutTransform>
+        </Image>
+
+        <!-- Logo -->
+        <Image Source="Assets/uixTxr_landingLogo.png"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Top"
+               Width="500"
+               Height="100"
+               Margin="0,20,0,0"
+               Panel.ZIndex="1"/>
+
+        <!-- STEP: Select EXE -->
+        <StackPanel x:Name="step_select_exe"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Width="400"
+                    Margin="0,0,0,20">
+            <TextBox x:Name="textBox_exe_loc"
+                     Height="30"
+                     Text="Select BattleTech.exe location..."
+                     Margin="0,5"/>
+            <Button x:Name="button_browse"
+                    Height="30"
+                    Content="Select EXE"
+                    Click="button_browse_Click"
+                    Margin="0,5"/>
+            <Button x:Name="button_start_install"
+                    Height="30"
+                    Content="Start Install"
+                    IsEnabled="False"
+                    Click="button_start_install_Click"
+                    Margin="0,5"/>
+        </StackPanel>
+
+        <!-- STEP: Downloading -->
+        <StackPanel x:Name="step_downloading"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,0,100"
+                    Width="400">
+            <ProgressBar x:Name="progressTotal" Height="20" Margin="0,5"/>
+            <ProgressBar x:Name="progressCurrent" Height="20" Margin="0,5"/>
+            <Label x:Name="label_current_file" Content=""/>
+            <TextBlock x:Name="tb_progress" Text="0%" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- STEP: Installing -->
+        <StackPanel x:Name="step_installing"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,0,60"
+                    Width="400">
+            <Label x:Name="lblInstall" Content="Installing..."/>
+            <ProgressBar x:Name="installProgressTotal" Height="20" Margin="0,5"/>
+            <TextBlock x:Name="tb_installProgress" Text="0/0" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- STEP: Done -->
+        <StackPanel x:Name="step_done"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,0,20">
+            <Button Content="Open Log Folder" Click="button_open_log_Click" Margin="0,5" Width="150"/>
+            <Button Content="Exit" Click="btnExit_Click" Width="150"/>
+        </StackPanel>
+
+        <!-- 🚫 Removed credit text -->
+
+    </Grid>
 </Window>
