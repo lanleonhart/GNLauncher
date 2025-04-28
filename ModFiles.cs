@@ -26,7 +26,7 @@ namespace GNLauncher
             "https://github.com/lanleonhart/Community-Asset-Bundle-CustomUnits/archive/refs/tags/Release.zip",
             "https://github.com/lanleonhart/Community-Asset-Bundle-Tanks/archive/refs/tags/release.zip",
             "https://github.com/lanleonhart/Community-Asset-Bundle-Miscellaneous/archive/refs/tags/release.zip",
-            "https://github.com/lanleonhart/Battletech-GN-Wars/archive/refs/tags/Release.zip"
+            "https://github.com/lanleonhart/Battletech-GN-Wars/archive/refs/tags/0.1.0.zip"
         };
 
         string[] DLL_ONLY_URLS = new string[]
@@ -114,7 +114,6 @@ namespace GNLauncher
             var tempPath = Path.Join(App.TempPath, "extracted");
             if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
 
-            // Extract normal mods first
             foreach (var zip in _downloadedFiles)
             {
                 var name = Path.GetFileNameWithoutExtension(zip).ToLower();
@@ -135,7 +134,6 @@ namespace GNLauncher
 
             await InstallExtractedMods(tempPath, exeFolder);
 
-            // Handle special DLL-only installs
             foreach (var zip in _downloadedFiles)
             {
                 var name = Path.GetFileNameWithoutExtension(zip).ToLower();
@@ -182,13 +180,32 @@ namespace GNLauncher
         private async Task InstallExtractedMods(string sourceRoot, string exeFolder)
         {
             var modsFolder = Path.Combine(Path.GetDirectoryName(exeFolder)!, "Mods");
-            foreach (var folder in Directory.GetDirectories(sourceRoot))
+
+            var topLevelDirs = Directory.GetDirectories(sourceRoot);
+            if (topLevelDirs.Length == 1)
             {
-                var modName = Path.GetFileName(folder);
-                var destPath = Path.Combine(modsFolder, modName);
-                if (Directory.Exists(destPath)) Directory.Delete(destPath, true);
-                DirectoryCopy(folder, destPath, true);
-                App.Log.Information($"Installed {modName}");
+                var innerRoot = topLevelDirs[0];
+                topLevelDirs = Directory.GetDirectories(innerRoot);
+
+                foreach (var folder in topLevelDirs)
+                {
+                    var modName = Path.GetFileName(folder);
+                    var destPath = Path.Combine(modsFolder, modName);
+                    if (Directory.Exists(destPath)) Directory.Delete(destPath, true);
+                    DirectoryCopy(folder, destPath, true);
+                    App.Log.Information($"Installed {modName}");
+                }
+            }
+            else
+            {
+                foreach (var folder in topLevelDirs)
+                {
+                    var modName = Path.GetFileName(folder);
+                    var destPath = Path.Combine(modsFolder, modName);
+                    if (Directory.Exists(destPath)) Directory.Delete(destPath, true);
+                    DirectoryCopy(folder, destPath, true);
+                    App.Log.Information($"Installed {modName}");
+                }
             }
         }
 
